@@ -9,14 +9,13 @@ import Nav from './Nav'
 const ChatMain = () => {
   const { handleSubmit, watch, register, reset } = useForm()
   const [inputValue, setInputValue] = useState('');
-  const [textareaHeight, setTextareaHeight] = useState('auto');
+  const [textareaHeight, setTextareaHeight] = useState('48px');
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null); 
 
   const onSubmit = (data) => {
-    // フォームの送信処理
-    console.log(data.content);
     setInputValue("")
+    setTextareaHeight("48px")
     setMessages([...messages, {type: "user", message: inputValue}])
     reset();
   };
@@ -27,7 +26,6 @@ const ChatMain = () => {
   };
 
   const handleKeyDown = (event) => {
-    // Cmd + Enter もしくは Ctrl + Enter
     if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
       handleSubmit(onSubmit, onError)();
     }
@@ -46,6 +44,7 @@ const ChatMain = () => {
   <div className="flex flex-col justify-center h-screen lg:mx-60 xl:mx-96 ">
     <div className="flex flex-row min-w-full h-full my-8 overflow-hidden" >
       <div className='flex flex-col'>
+        {/* sample content */}
       <MessageCard key={0} message={"こんにちは。質問をどうぞ！"} type={"bot"} />
       {messages.map((msg, idx) => {
         return <MessageCard key={idx} message={msg.message} type={msg.type} />
@@ -60,7 +59,7 @@ const ChatMain = () => {
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onInput={(e) => {
-            e.target.style.height = 'auto';
+            e.target.style.height = '48px';
             e.target.style.height = e.target.scrollHeight + 'px';
             setTextareaHeight(e.target.scrollHeight + 'px');
           }}
