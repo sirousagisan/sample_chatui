@@ -1,23 +1,61 @@
-import React, { useState, useRef, useEffect } from 'react'
-import MessageCard from './MessageCard';
+import React, { useState, useRef, useEffect, useContext } from 'react'
 import { IoIosSend } from "react-icons/io";
 import { useForm } from 'react-hook-form'
 
-
-import Nav from './Nav'
+import MessageCard from './MessageCard';
+import { MessagesContext, MessagesDispatchContext } from './contexts/messages';
 
 const ChatMain = () => {
   const { handleSubmit, watch, register, reset } = useForm()
   const [inputValue, setInputValue] = useState('');
   const [textareaHeight, setTextareaHeight] = useState('48px');
-  const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null); 
+  const messages = useContext(MessagesContext) || []
+  const setMessages = useContext(MessagesDispatchContext)
+  const [ botMsg, setBotMsg ] = useState("")
 
-  const onSubmit = (data) => {
-    setInputValue("")
-    setTextareaHeight("48px")
-    setMessages([...messages, {type: "user", message: inputValue}])
+  const streamRes = async (path, question, update) => {
+    // const messages = useContext(MessagesContext) || []
+    // const SetMessages = useContext(MessagesDispatchContext)
+    
+    const url = "http://127.0.0.1:8080" + path
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {"content-type": "application/json"},
+      body: JSON.stringify({text: question})
+    })
+    const data = res.body 
+    const reader = data.getReader()
+    const decoder = new TextDecoder()
+    let text = ""
+    let done = false
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading
+      text += decoder.decode(value);
+      update(text + (done ? "" : "▊"))
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    setMessages((prev) => [...prev, { type: "bot", message: text }]);
+    update("")
+    
+  }
+  const onSubmit = () => {
+  
+    // console.log(res);
+    setTextareaHeight("48px");
+    setMessages((prev) => 
+      [...prev, {type: "user", message: inputValue}]
+    );
+    streamRes("/chat", inputValue, (value) => {
+      setBotMsg(value)
+    })
+    
+    setInputValue("");
     reset();
+    
   };
 
   const onError = (errors) => {
@@ -31,24 +69,25 @@ const ChatMain = () => {
     }
   };
 
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
+  // useEffect(() => {
+  //   if (messagesEndRef.current) {
+  //     messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  //   }
+  // }, [botMsg]);
   
   return (
 <>
   
   {/* <Nav /> */}
   <div className="flex flex-col justify-center h-screen lg:mx-60 xl:mx-96 ">
-    <div className="flex flex-row min-w-full h-full my-8 overflow-hidden" >
+    <div className="flex flex-row min-w-full h-full my-8 overflow-scroll" >
       <div className='flex flex-col'>
         {/* sample content */}
       <MessageCard key={0} message={"こんにちは。質問をどうぞ！"} type={"bot"} />
       {messages.map((msg, idx) => {
         return <MessageCard key={idx} message={msg.message} type={msg.type} />
       })}
+      {botMsg!="" ? <MessageCard key={999} message={botMsg} type={"bot"} /> : <></>}
       </div>
       <div ref={messagesEndRef} />
       <div></div>
